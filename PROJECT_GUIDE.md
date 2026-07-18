@@ -136,3 +136,23 @@ These rules are embedded into the vector database and used to augment review pro
 ✅ **Customizable**: RAG layer grounds reviews in YOUR style guide  
 ✅ **Transparent**: Structured JSON output is easy to parse and extend  
 ✅ **Graceful Degradation**: Handles edge cases without hard failures
+
+## Architecture Diagram
+
+```mermaid
+graph TD
+    A["PR Event (GitHub Actions)"] --> B["run_review.py<br/>Orchestrator"]
+    B --> C["github_client.py<br/>Fetch PR diffs"]
+    C --> D["rag.py<br/>Qdrant & Embeddings"]
+    D --> E["llm_reviewer.py<br/>Groq / Anthropic"]
+    E --> F["github_client.py<br/>Post inline comments"]
+    E --> G["slack_notify.py<br/>Slack summary"]
+    
+    style A fill:#2dd4bf,stroke:#333,stroke-width:1px
+    style B fill:#60a5fa,stroke:#333,stroke-width:1px
+    style C fill:#a78bfa,stroke:#333,stroke-width:1px
+    style D fill:#fbbf24,stroke:#333,stroke-width:1px
+    style E fill:#f87171,stroke:#333,stroke-width:1px
+    style F fill:#34d399,stroke:#333,stroke-width:1px
+    style G fill:#60a5fa,stroke:#333,stroke-width:1px
+```
