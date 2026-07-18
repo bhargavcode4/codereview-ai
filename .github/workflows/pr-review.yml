@@ -1,0 +1,42 @@
+name: CodeReview AI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      # Cache the embedded Qdrant index so we don't re-embed the style guide
+      # on every single PR -- only when style_guide/ changes.
+      - name: Cache style-guide index
+        uses: actions/cache@v4
+        with:
+          path: qdrant_data
+          key: qdrant-style-guide-${{ hashFiles('style_guide/**') }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Ingest style guide (only if index wasn't restored from cache)
+        run: |
+          if [ ! -d "qdrant_data" ]; then
+            python ingest_style_guide.py style_guide/example_style_guide.md
+          fi
+
+      - name: Run review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: python run_review.py

@@ -1,0 +1,4 @@
+requests>=2.31
+anthropic>=0.40
+qdrant-client>=1.9
+sentence-transformers>=3.0

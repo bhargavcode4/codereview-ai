@@ -1,0 +1,16 @@
+{
+  "action": "opened",
+  "pull_request": {
+    "id": 1,
+    "number": 42,
+    "title": "Add user authentication feature",
+    "html_url": "https://github.com/example/repo/pull/42",
+    "state": "open"
+  },
+  "repository": {
+    "name": "repo",
+    "owner": {
+      "login": "example"
+    }
+  }
+}
