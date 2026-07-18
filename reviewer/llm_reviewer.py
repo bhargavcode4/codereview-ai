@@ -11,7 +11,16 @@ _client = None
 def _get_client():
     global _client
     if _client is None:
-        _client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
+        if config.LLM_PROVIDER == "groq":
+            from groq import Groq
+
+            if not config.GROQ_API_KEY:
+                raise ValueError("GROQ_API_KEY is required when LLM_PROVIDER=groq")
+            _client = Groq(api_key=config.GROQ_API_KEY)
+        else:
+            if not config.ANTHROPIC_API_KEY:
+                raise ValueError("ANTHROPIC_API_KEY is required when LLM_PROVIDER=anthropic")
+            _client = Anthropic(api_key=config.ANTHROPIC_API_KEY)
     return _client
 
 
@@ -50,13 +59,26 @@ def review_file_diff(filename: str, patch: str, style_context: str = "") -> list
         user_prompt += f"Relevant style guide context:\n{style_context}\n\n"
     user_prompt += f"Diff:\n{patch[:config.MAX_DIFF_CHARS_PER_FILE]}"
 
-    response = _get_client().messages.create(
-        model=config.REVIEW_MODEL,
-        max_tokens=1500,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_prompt}],
-    )
-    text = "".join(block.text for block in response.content if block.type == "text")
+    if config.LLM_PROVIDER == "groq":
+        response = _get_client().chat.completions.create(
+            model=config.REVIEW_MODEL,
+            max_tokens=1500,
+            temperature=0,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        text = response.choices[0].message.content or ""
+    else:
+        response = _get_client().messages.create(
+            model=config.REVIEW_MODEL,
+            max_tokens=1500,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+        text = "".join(block.text for block in response.content if block.type == "text")
+
     issues = _extract_json_array(text)
     for issue in issues:
         issue["file"] = filename
